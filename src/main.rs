@@ -18,7 +18,7 @@ struct Token {
 
 
 fn error(message: &str, line: usize, pos: usize) {
-    println!("ERROR PICO VOLE????: {} NA POZICI VOLE {}.", message, pos);
+    println!("[ERROR] {} at line {}, col {}.", message, line, pos);
     exit(-1);
 }
 
@@ -81,7 +81,12 @@ fn lex(program: &String) -> Vec<Token> {
                 last.push('"');
                 parsing_string = !parsing_string;
             },
-            _ => last.push(character)
+            _ => {
+                if !parsing_fn {
+                    error("Unexpected word", line, pos)
+                }
+                last.push(character)
+            }
         }
     }
     return result;
@@ -89,7 +94,7 @@ fn lex(program: &String) -> Vec<Token> {
 
 fn main() {
     for i in lex(&String::from("  
-[     print \"parek\"]       [+ 1 [- 1 2]]")) {
+[     print \"parek\"]       [+ 1 [- 1 2]] pare")) {
         println!("{:?} {}", i.kind, i.context);
     }
 }
