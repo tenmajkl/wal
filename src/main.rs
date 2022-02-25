@@ -7,17 +7,24 @@ use std::process::exit;
 enum TokenKind {
     FUNCTION,
     STRING,
-    INT
+    INT,
+    VOID
 }
 
+#[derive(Debug)]
 struct Token {
     kind: TokenKind,
     context: String,
+    body: Vec<Token>
 }
 
+struct Word {
+    content: String,
+    pos: usize,
+    line: usize
+}
 
-
-fn error(message: &str, line: usize, pos: usize) {
+fn error(message: &str, line: usize, pos: usize) -> ! {
     println!("[ERROR] {} at line {}, col {}.", message, line, pos);
     exit(-1);
 }
@@ -31,45 +38,28 @@ fn is_numeric(target: &str) -> bool {
     return true;
 }
 
-fn tokenize(word: &str) -> Token {
-    let mut kind;
-    if is_numeric(&word) {
-        kind = TokenKind::INT;
-    } else if word.starts_with('"') {
-        kind = TokenKind::STRING;
-    } else {
-        kind = TokenKind::FUNCTION;
-    }
-
-    Token {
-        kind,
-        context: String::from(word)
-    }
-}
-
-fn lex(program: &String) -> Vec<Token> {
-    let mut result: Vec<Token> = Vec::new();
+fn lex(program: &String) -> Vec<Word> {
+    let mut result: Vec<Word> = Vec::new();
     let mut last = String::new();
     let mut line = 1;
     let mut pos = 0;
     let mut parsing_string = false; 
-    let mut parsing_fn = false;
     for character in program.chars() {
         pos += 1;
         match character {
-            '[' => parsing_fn = true,
+            '[' => result.push(Word { content: String::from("["), pos, line }),
             ']' => {
                 if !last.is_empty() {
-                    result.push(tokenize(&last));
+                    result.push(Word { content: last.clone(), pos, line });
                 }
+                result.push(Word { content: String::from("]"), pos, line });
                 last.clear();
-                parsing_fn = false;
             },
             ' ' =>  {
                 if parsing_string {
                     last.push(' ');
                 } else if !last.is_empty() {
-                    result.push(tokenize(&last));
+                    result.push(Word { content: last.clone(), pos, line });
                     last.clear();
                 }
             },
@@ -81,30 +71,61 @@ fn lex(program: &String) -> Vec<Token> {
                 last.push('"');
                 parsing_string = !parsing_string;
             },
-            _ => {
-                if !parsing_fn {
-                    error("Unexpected word", line, pos)
-                }
-                last.push(character)
-            }
+            _ => last.push(character)
         }
     }
     return result;
 }
 
-fn main() {
-    for i in lex(&String::from("  
-[     print \"parek\"]       [+ 1 [- 1 2]] pare")) {
-        println!("{:?} {}", i.kind, i.context);
+fn tokenize_fn(body: &Vec<Word>, start: usize) -> (Vec<Token>, usize) {
+    let mut tokens: Vec<Token> = Vec::new();
+    for index in start..body.len() {
+        let word = &body[index];
+        let mut kind = TokenKind::VOID;
+        if is_numeric(&word.content) {
+            kind = TokenKind::INT;
+        } else if word.content.starts_with('"') {
+            kind = TokenKind::STRING;
+        } else if word.content == "[" {
+            tokens. tokenize_fn(body.clone(), index);
+        } else if word.content == "]" {
+            return (tokens, index);
+        } else {
+            if index != start {
+                error("Undefined token", body[index].line, body[index].pos);
+            }
+
+            kind = TokenKind::FUNCTION;
+        }
+        
+        tokens.push(Token {
+            kind,
+            body: Vec::new(),
+            context: String::from(&word.content),
+        });
+    }
+    error("Unclosed function call", 0, 0);
+}
+
+fn tokenize(program: Vec<Word>) {
+    let mut tokens: Vec<Token> = Vec::new();
+    let mut skip = 0;
+    for index in 0..program.len() {
+        if index >= skip {
+            match program[index].content.as_str() {
+                "[" => {
+                    let (body, end) = tokenize_fn(&program, index+1);
+                    skip = end+1;
+                    println!("{}", skip);
+                    tokens.push(Token { kind: TokenKind::FUNCTION, body, context: String::from(&program[index].content) });
+                },
+                _ => error("Unexpected token", program[index].line, program[index].pos)
+            }
+        }
     }
 }
 
-// [
-//      Function,
-//      'parek'
-//      [
-//          String,
-//          'parek',
-//          null
-//      ]
-// ]
+fn main() {
+    println!("{:?}", tokenize(lex(&String::from("
+[parek \"parek\"] [+ 1 2]]"))));
+}
