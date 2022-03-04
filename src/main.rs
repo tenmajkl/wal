@@ -1,25 +1,26 @@
 // lisp inspired language
 // very good very nice
 
-use std::process::exit;
+use std::{process::exit, collections::HashMap};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 #[derive(PartialEq)]
 enum TokenKind {
     FUNCTION,
     STRING,
     INT,
-    VOID
+    VOID,
+    BOOL
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct Token {
     kind: TokenKind,
     context: String,
     body: Vec<Token>
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct Word {
     content: String,
     pos: usize,
@@ -49,13 +50,23 @@ fn lex(program: &String) -> Vec<Word> {
     for character in program.chars() {
         pos += 1;
         match character {
-            '[' => result.push(Word { content: String::from("["), pos, line }),
-            ']' => {
-                if !last.is_empty() {
-                    result.push(Word { content: last.clone(), pos, line });
+            '[' => {
+                if parsing_string {
+                    last.push('[');
+                } else {
+                    result.push(Word { content: String::from("["), pos, line });
                 }
-                result.push(Word { content: String::from("]"), pos, line });
-                last.clear();
+            },
+            ']' => {
+                if parsing_string {
+                    last.push(']');
+                } else {
+                    if !last.is_empty() {
+                        result.push(Word { content: last.clone(), pos, line });
+                    }
+                    result.push(Word { content: String::from("]"), pos, line });
+                    last.clear();
+                }
             },
             ' ' =>  {
                 if parsing_string {
@@ -127,52 +138,124 @@ fn tokenize(program: Vec<Word>) -> Vec<Token> {
     return tokens;
 }
 
-fn parse_token(token: Token) -> Token {
-    return match token.kind {
-        TokenKind::FUNCTION => 
-            match token.context.as_str() {
-                "echo" => {
-                    for child in token.body.clone() {
-                        if child.kind != TokenKind::VOID {
-                            println!("{}", parse_token(child).context);
-                        }
-                    }
-                    return Token { kind: TokenKind::VOID, body: Vec::new(), context: String::new() };
-                },
-                "+" => {
-                    let mut result: isize = 0;
-                    for child in token.body.clone() {
-                        result += match child.kind {
-                            TokenKind::INT => child.context.parse::<isize>().unwrap(),
-                            TokenKind::FUNCTION => parse_token(child).context.parse::<isize>().unwrap(), 
-                            _ => error("Function + takes only integer arguments", 0, 0)
-                        }
-                    }
-                    return Token { kind: TokenKind::INT, context: format!("{}", result), body: Vec::new() };
-                },
-                "-" => {
-                    let mut result: isize = 0;
-                    for child in token.body.clone() {
-                        result -= match child.kind {
-                            TokenKind::INT => child.context.parse::<isize>().unwrap(),
-                            TokenKind::FUNCTION => parse_token(child).context.parse::<isize>().unwrap(), 
-                            _ => error("Function + takes only integer arguments", 0, 0)
-                        }
-                    }
-                    return Token { kind: TokenKind::INT, context: format!("{}", result), body: Vec::new() };
-                },
-                _ => error("Undefined function", 0, 0) // TODO position
-            },
-        TokenKind::INT|TokenKind::STRING|TokenKind::VOID => token,
-    }
+struct Interpreter {
+    variables: HashMap<String, Token>,
 }
 
-fn parse(program: Vec<Token>) {
-    for token in program {
-        parse_token(token);
+impl Interpreter {
+
+    pub fn new() -> Interpreter {
+        Interpreter {
+            variables: HashMap::new()
+        }
+    }
+
+    fn parse_token(&mut self, token: Token) -> Token {
+        return match token.kind {
+            TokenKind::FUNCTION => 
+                match token.context.as_str() {
+                    "echo" => {
+                        for child in token.body.clone() {
+                            if child.kind != TokenKind::VOID {
+                                println!("{}", self.parse_token(child).context);
+                            }
+                        }
+                        return Token { kind: TokenKind::VOID, body: Vec::new(), context: String::new() };
+                    },
+                    "retreive" => {
+                        if !token.body.is_empty() {
+                            println!("{}", &self.parse_token(token.body[0].clone()).context);
+                        }
+                        let mut input: String = String::new();
+                        std::io::stdin().read_line(&mut input).unwrap();
+                        return Token { kind: TokenKind::STRING, context: input, body: Vec::new()};
+                    }
+                    "+" => {
+                        let mut result: isize = 0;
+                        for child in token.body.clone() {
+                            let token = self.parse_token(child);
+                            if token.kind == TokenKind::INT {
+                                result += token.context.parse::<isize>().unwrap();
+                            } else {
+                                error("Function + takes only integer as argument", 0, 0);
+                            }
+                        }
+                        return Token { kind: TokenKind::INT, context: format!("{}", result), body: Vec::new() };
+                    },
+                    "-" => {
+                        let mut result: isize = 0;
+                        for child in token.body.clone() {
+                            let parsed = self.parse_token(child);
+                            if parsed.kind == TokenKind::INT {
+                                result -= parsed.context.parse::<isize>().unwrap();
+                            } else {
+                                error("Function - takes only integer as argument", 0, 0);
+                            }
+                        }
+                        return Token { kind: TokenKind::INT, context: format!("{}", result), body: Vec::new() };
+                    },
+                    "==" => {
+                        if token.body.len() < 2 {
+                            error("Function == takes at least 2 arguments", 0, 0);
+                        }
+                        let mut result: bool = true;
+                        let mut last: Token = self.parse_token(token.body[0].clone());
+                        for index in 1..token.body.len() {
+                            let parsed: Token = self.parse_token(token.body[index].clone());
+                            if last.kind != parsed.kind {
+                                result = false;
+                                break;
+                            }
+
+                            if last.context != parsed.context {
+                                result = false;
+                                break;
+                            }
+
+                            last = parsed;
+                        }
+                        return Token { kind: TokenKind::BOOL, context: format!("{}", result), body: Vec::new() }
+                    },
+                    "if" => {
+                        if token.body.len() < 3 {
+                            error("Function if takes at least 3 arguments", 0, 0);
+                        }
+                        let condition: Token = self.parse_token(token.body[0].clone());
+                        if condition.context == "false" {
+                            return self.parse_token(token.body[2].clone());
+                        } else {
+                            return self.parse_token(token.body[1].clone());
+                        }
+                    },
+                    "$" => {
+                        if token.body.len() == 1 {
+                            if self.variables.contains_key(&token.body[0].context) {
+                                return self.variables.get(token.body[0]);
+                            } else {
+                                error("Undefined variable", 0, 0);
+                            }
+                        } else if token.body.len() == 2 {
+                            self.variables.
+                        } else {
+                            error("Function $ takes at least 1 argument", 0, 0);
+                        }
+                    }
+                    _ => error("Undefined function", 0, 0) // TODO position
+                },
+            TokenKind::INT|TokenKind::STRING|TokenKind::VOID|TokenKind::BOOL => token,
+        }
+    }
+
+    fn parse(&mut self, program: Vec<Token>) {
+        for token in program {
+            self.parse_token(token);
+        }
     }
 }
 
 fn main() {
-    parse(tokenize(lex(&String::from("[echo [- 1]]"))));
+    let mut interpreter: Interpreter = Interpreter::new();
+    interpreter.parse(tokenize(lex(&String::from("
+[echo [retreive 'parek']]
+"))));
 }
