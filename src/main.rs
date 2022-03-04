@@ -11,7 +11,9 @@ enum TokenKind {
     INT,
     VOID,
     BOOL,
-    VARIABLE
+    VARIABLE,
+    USERFUNCTION,
+    ARRAY,
 }
 
 #[derive(Debug, Clone)]
@@ -130,6 +132,8 @@ fn tokenize(program: Vec<Word>) -> Vec<Token> {
                 } else {
                     if program[index - 1].content == "$" {
                         curent.body.push(Token { kind: TokenKind::VARIABLE, context: word.content, body: Vec::new() });
+                    } else if program[index - 1].content == "=>" {
+                        curent.body.push(Token { kind: TokenKind::USERFUNCTION, context: word.content, body: Vec::new() });
                     } else {
                         error("Unknown word", word.line, word.pos);
                     }
@@ -154,13 +158,15 @@ fn tokenize(program: Vec<Word>) -> Vec<Token> {
 
 struct Interpreter {
     variables: HashMap<String, Token>,
+//    functions: HashMap<String, Token>,
 }
 
 impl Interpreter {
 
     pub fn new() -> Interpreter {
         Interpreter {
-            variables: HashMap::new()
+            variables: HashMap::new(),
+//            functions: HashMap::new(),
         }
     }
 
@@ -170,8 +176,15 @@ impl Interpreter {
                 match token.context.as_str() {
                     "->" => {
                         for child in token.body.clone() {
-                            if child.kind != TokenKind::VOID {
-                                println!("{}", self.parse_token(child).context);
+                            let child = self.parse_token(child);
+                            if child.kind == TokenKind::ARRAY {
+                                print!("Array: ");
+                                for item in child.body {
+                                    print!("{} ", item.context);
+                                }
+                                println!("");
+                            } else if child.kind != TokenKind::VOID {
+                                println!("{}", child.context);
                             }
                         }
                         return Token { kind: TokenKind::VOID, body: Vec::new(), context: String::new() };
@@ -255,10 +268,26 @@ impl Interpreter {
                         } else {
                             error("Function $ takes at least 1 argument", 0, 0);
                         }
-                    }
+                    },
+                    "@" => {
+                        return Token { kind: TokenKind::ARRAY, context: "Array".to_string(), body: token.body};
+                    },
+                    "@>" => {
+                        let mut result: Token = self.parse_token(token.body[0].clone());
+                        // TODO errors
+                        for item in token.body[1..].into_iter() {
+                            result.body.push(item.clone());
+                        }
+                        return result;
+                    },
+                    //"@$" => {
+                    //   indexing
+                    //   [-> [@$ [@ 1 2 3] 1] ] ; outputs 2
+                    //   [-> [@$ [@ 1 2 3] 1 4] ] ; outputs Array: 1 4 3
+                    //}
                     _ => error("Undefined function", 0, 0) // TODO position
                 },
-            TokenKind::INT|TokenKind::STRING|TokenKind::VOID|TokenKind::BOOL|TokenKind::VARIABLE => token,
+            TokenKind::INT|TokenKind::STRING|TokenKind::VOID|TokenKind::BOOL|TokenKind::VARIABLE|TokenKind::USERFUNCTION|TokenKind::ARRAY => token,
         }
     }
 

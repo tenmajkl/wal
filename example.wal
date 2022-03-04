@@ -2,8 +2,21 @@
 
 [$ input [<-]] ; retreiving input
 [=< [== [$ input] 'foo'] ; branching
-    [-> 'Goode job!'] ; true
-    [-> 'ok'] ; false
-] ; goodbye
+    [-> 'Goode job!'] ;true
+    [=< [== [$ input] 'bar']
+        [-> 'very nice']
+        [-> 'ok']
+    ]
+] 
 
+[
+ -> [@ 1 2 'foo'] ; array
+]
 
+[$ array 
+    [@ 1 'bar' 3]
+]
+
+[-> [$ array]]
+
+[-> [@> [$ array] 1 'foo']]
