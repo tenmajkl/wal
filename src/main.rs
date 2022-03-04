@@ -1,19 +1,20 @@
 // lisp inspired language
 // very good very nice
 
-use std::{process::exit, collections::HashMap};
+use std::{env, fs, path::Path, process::exit, collections::HashMap};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 #[derive(PartialEq)]
 enum TokenKind {
     FUNCTION,
     STRING,
     INT,
     VOID,
-    BOOL
+    BOOL,
+    VARIABLE
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct Token {
     kind: TokenKind,
     context: String,
@@ -47,8 +48,15 @@ fn lex(program: &String) -> Vec<Word> {
     let mut line = 1;
     let mut pos = 0;
     let mut parsing_string = false; 
+    let mut parsing_comment = false;
     for character in program.chars() {
         pos += 1;
+        if parsing_comment {
+            if character == '\n' {
+                parsing_comment = false;
+            }
+            continue;
+        }
         match character {
             '[' => {
                 if parsing_string {
@@ -84,6 +92,7 @@ fn lex(program: &String) -> Vec<Word> {
                 last.push('\'');
                 parsing_string = !parsing_string;
             },
+            ';' => parsing_comment = true,
             _ => last.push(character)
         }
     }
@@ -97,7 +106,8 @@ fn tokenize(program: Vec<Word>) -> Vec<Token> {
     let mut rec_function: Vec<Word> = Vec::new();
     let mut curent: Token = Token { kind: TokenKind::VOID, context: String::new(), body: Vec::new() };
     let mut nested: isize = 0;
-    for word in program {
+    for index in 0..program.len() {
+        let word = program[index].clone();
         if word.content == "[" {
             if parsing_fn {
                 nested += 1;
@@ -109,7 +119,7 @@ fn tokenize(program: Vec<Word>) -> Vec<Token> {
         } else if parsing_fn {
             if rec_function.is_empty() {
                 if word.content.starts_with('\'') {
-                    curent.body.push(Token { kind: TokenKind::STRING, context: word.content, body: Vec::new() }) // TODO String trim
+                    curent.body.push(Token { kind: TokenKind::STRING, context: word.content[1..(word.content.len()-1)].to_string(), body: Vec::new() }) // TODO String trim
                 } else if is_numeric(&word.content) {
                     curent.body.push(Token { kind: TokenKind::INT, context: word.content, body: Vec::new() })
                 } else if curent.context.is_empty() {
@@ -118,7 +128,11 @@ fn tokenize(program: Vec<Word>) -> Vec<Token> {
                     tokens.push(curent.clone());
                     parsing_fn = false;
                 } else {
-                    error("Unknown word", word.line, word.pos);
+                    if program[index - 1].content == "$" {
+                        curent.body.push(Token { kind: TokenKind::VARIABLE, context: word.content, body: Vec::new() });
+                    } else {
+                        error("Unknown word", word.line, word.pos);
+                    }
                 }
             } else {
                 rec_function.push(word.clone());
@@ -154,7 +168,7 @@ impl Interpreter {
         return match token.kind {
             TokenKind::FUNCTION => 
                 match token.context.as_str() {
-                    "echo" => {
+                    "->" => {
                         for child in token.body.clone() {
                             if child.kind != TokenKind::VOID {
                                 println!("{}", self.parse_token(child).context);
@@ -162,14 +176,14 @@ impl Interpreter {
                         }
                         return Token { kind: TokenKind::VOID, body: Vec::new(), context: String::new() };
                     },
-                    "retreive" => {
+                    "<-" => {
                         if !token.body.is_empty() {
-                            println!("{}", &self.parse_token(token.body[0].clone()).context);
+                            print!("{}", &self.parse_token(token.body[0].clone()).context);
                         }
                         let mut input: String = String::new();
                         std::io::stdin().read_line(&mut input).unwrap();
-                        return Token { kind: TokenKind::STRING, context: input, body: Vec::new()};
-                    }
+                        return Token { kind: TokenKind::STRING, context: input.trim().to_string(), body: Vec::new()};
+                    },
                     "+" => {
                         let mut result: isize = 0;
                         for child in token.body.clone() {
@@ -206,7 +220,7 @@ impl Interpreter {
                                 result = false;
                                 break;
                             }
-
+                    
                             if last.context != parsed.context {
                                 result = false;
                                 break;
@@ -216,7 +230,7 @@ impl Interpreter {
                         }
                         return Token { kind: TokenKind::BOOL, context: format!("{}", result), body: Vec::new() }
                     },
-                    "if" => {
+                    "=<" => {
                         if token.body.len() < 3 {
                             error("Function if takes at least 3 arguments", 0, 0);
                         }
@@ -230,19 +244,21 @@ impl Interpreter {
                     "$" => {
                         if token.body.len() == 1 {
                             if self.variables.contains_key(&token.body[0].context) {
-                                return self.variables.get(token.body[0]);
+                                return self.variables.get(&token.body[0].context).unwrap().clone();
                             } else {
                                 error("Undefined variable", 0, 0);
                             }
                         } else if token.body.len() == 2 {
-                            self.variables.
+                            let value = self.parse_token(token.body[1].clone());
+                            self.variables.insert(token.body[0].context.clone(), value.clone());
+                            return value;
                         } else {
                             error("Function $ takes at least 1 argument", 0, 0);
                         }
                     }
                     _ => error("Undefined function", 0, 0) // TODO position
                 },
-            TokenKind::INT|TokenKind::STRING|TokenKind::VOID|TokenKind::BOOL => token,
+            TokenKind::INT|TokenKind::STRING|TokenKind::VOID|TokenKind::BOOL|TokenKind::VARIABLE => token,
         }
     }
 
@@ -254,8 +270,16 @@ impl Interpreter {
 }
 
 fn main() {
+
+    let mut args = env::args();
+    let filename = args.nth(1).unwrap();
+    if !Path::new(&filename).exists() {
+        error(&format!("File {} not found", filename), 0, 0);
+    }
+
+    let code = fs::read_to_string(filename)
+        .expect("File is not readable");
+
     let mut interpreter: Interpreter = Interpreter::new();
-    interpreter.parse(tokenize(lex(&String::from("
-[echo [retreive 'parek']]
-"))));
+    interpreter.parse(tokenize(lex(&code)));
 }

@@ -1,0 +1,9 @@
+; wal example
+
+[$ input [<-]] ; retreiving input
+[=< [== [$ input] 'foo'] ; branching
+    [-> 'Goode job!'] ; true
+    [-> 'ok'] ; false
+] ; goodbye
+
+
