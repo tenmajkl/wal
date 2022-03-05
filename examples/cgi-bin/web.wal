@@ -1,0 +1,4 @@
+#!../target/wal
+
+[-> 'Content-type: text/html' '' '']
+[-> 'Welcome to my fabularous website']

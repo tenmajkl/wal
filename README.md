@@ -29,12 +29,12 @@ On this example we can see calling function `->` which prints all given argument
 
 Wal currently supports only string literarls and positive integers.
 
-For comments is used `;` which ends with new line:
+For comments is used `#` which ends with new line:
 
 ```wal
 ; demonstration of comments
 
-[-> 'foo'] ; this is print 
+[-> 'foo'] # this is print 
 
 ; [-> 'bar'] this wont evaluate
 ```
@@ -62,15 +62,15 @@ The same goes for `-`:
 For comparing, there is function `==`:
 
 ```wal
-[-> [== 1 2]] ; false
-[-> [== 1 1]] ; true
-[-> [== 'foo' 'foo']] ; true
+[-> [== 1 2]] # false
+[-> [== 1 1]] # true
+[-> [== 'foo' 'foo']] # true
 ```
 
 And its strict:
 
 ```wal
-[-> [== '1' 1]] ; false
+[-> [== '1' 1]] # false
 ```
 
 We can use this operator for
@@ -104,8 +104,8 @@ Why `=<`? Because this operator literally looks like branch.
 Wal has simple system of variables, all the manipulation is done with function `$`:
 
 ```wal
-[$ foo 10] ; created variable called foo with value 10
-[-> [$ foo]] ; accessing variable 
+[$ foo 10] # created variable called foo with value 10
+[-> [$ foo]] # accessing variable 
 ```
 
 If the function has only 1 argument it returns value of given variable. If it has 2 arguments it sets the value to the variable and returns the value.
@@ -129,7 +129,7 @@ So if we want to save it we have to put it in variable explicitely
 Arrays can be printed:
 
 ```wal
-[-> [@ 1 2 'foo']] ; Array: 1 2 'foo'
+[-> [@ 1 2 'foo']] # Array: 1 2 'foo'
 ```
 
 #### Pushing to array
@@ -138,7 +138,7 @@ Function `@>` pushes all arguments to the top of array given as first argument.
 
 ```wal
 
-[-> [@> [@ 1 2] 3]] ; 1 2 3
+[-> [@> [@ 1 2] 3]] # 1 2 3
 
 More complex example:
 
@@ -155,7 +155,7 @@ More complex example:
     ] 
 ]
 
-[-> [$ array]] ; 1 2 3 'foo' 1
+[-> [$ array]] # 1 2 3 'foo' 1
 
 ```
 
@@ -176,7 +176,7 @@ For indexing there is `@$` function which returns element on index from first ar
     ]
 ] ; outputs 2
 
-[-> [@$ [$ array] 1 3]] ; outputs Array: 1 3 3
+[-> [@$ [$ array] 1 3]] # outputs Array: 1 3 3
 
 ```
 

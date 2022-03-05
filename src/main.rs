@@ -94,7 +94,7 @@ fn lex(program: &String) -> Vec<Word> {
                 last.push('\'');
                 parsing_string = !parsing_string;
             },
-            ';' => parsing_comment = true,
+            '#' => parsing_comment = true,
             _ => last.push(character)
         }
     }

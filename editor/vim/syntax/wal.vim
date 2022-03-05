@@ -15,7 +15,7 @@ syn match walFunction '\v\@\>'
 
 syn match walNumber '\d\+' display
 syn region walString start='\'' end='\'' display
-syn region walComment start=';' end='\n' display 
+syn region walComment start='#' end='\n' display 
 
 let b:current_syntax='wal'
 
