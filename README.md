@@ -132,6 +132,12 @@ Arrays can be printed:
 [-> [@ 1 2 'foo']] # Array: 1 2 'foo'
 ```
 
+You can also access enviromet variables with `%$`:
+
+```wal
+[-> [%$ 'REQUEST_METHOD']]
+```
+
 #### Pushing to array
 
 Function `@>` pushes all arguments to the top of array given as first argument.

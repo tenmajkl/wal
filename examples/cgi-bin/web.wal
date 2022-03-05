@@ -1,4 +1,10 @@
 #!../target/wal
 
 [-> 'Content-type: text/html' '' '']
-[-> 'Welcome to my fabularous website']
+
+[->
+    [=< [== [%$ 'REQUEST_METHOD'] 'GET']
+        'Welcome to my fabularous website!'
+        '400'
+    ]
+]
