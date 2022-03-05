@@ -14,9 +14,20 @@
 ]
 
 [$ array 
-    [@ 1 'bar' 3]
+    [@ 1 'bar' 3] ; saving array to variable
+]
+
+[-> [$ array]] ; printing array from variable
+
+[-> [@> [$ array] 1 'foo']] ; pushing to array
+
+[$ array
+    [@>
+        [$ array]
+        1
+    ]
 ]
 
 [-> [$ array]]
 
-[-> [@> [$ array] 1 'foo']]
+[-> [@$ [@ 1 0 '10'] 2 ]] ; indexing array

@@ -280,11 +280,28 @@ impl Interpreter {
                         }
                         return result;
                     },
-                    //"@$" => {
-                    //   indexing
-                    //   [-> [@$ [@ 1 2 3] 1] ] ; outputs 2
-                    //   [-> [@$ [@ 1 2 3] 1 4] ] ; outputs Array: 1 4 3
-                    //}
+                    "@$" => {
+                        if token.body.len() < 2 {
+                            error("Function @$ takes at least 2 arguments", 0, 0)
+                        }
+                        
+                        let mut array: Vec<Token> = self.parse_token(token.body[0].clone()).body;
+                        if token.body[1].kind != TokenKind::INT {
+                            error("Array can be indexed only with integer", 0, 0);
+                        }
+                        let index: usize = token.body[1].context.parse::<usize>().unwrap();
+                        
+                        if token.body.len() == 2 {
+                            if index > array.len() -1 {
+                                error(&format!("Cannot index to position {}, because size of array is {}", index, array.len()), 0, 0)
+                            }
+                            return array[index].clone();
+                        } else {
+                            array[index] = token.body[2].clone();
+                            return Token { kind: TokenKind::ARRAY, context: "Array".to_string(), body: array }; 
+                        }
+
+                    },
                     _ => error("Undefined function", 0, 0) // TODO position
                 },
             TokenKind::INT|TokenKind::STRING|TokenKind::VOID|TokenKind::BOOL|TokenKind::VARIABLE|TokenKind::USERFUNCTION|TokenKind::ARRAY => token,
