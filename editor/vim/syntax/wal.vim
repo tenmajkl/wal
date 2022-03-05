@@ -12,7 +12,7 @@ syn match walFunction '\v\=\<'
 syn match walFunction '\v\=\='
 syn match walFunction '\v\@'
 syn match walFunction '\v\@\>'
-syn match walFunction '\v\%\$'
+syn match walFunction '\v\$_'
 
 syn match walNumber '\d\+' display
 syn region walString start='\'' end='\'' display

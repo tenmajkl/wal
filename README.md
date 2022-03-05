@@ -1,6 +1,8 @@
 # Wal
 
-Wal is lisp-inspired scripting language with really weird tokens written in rust.
+Wal is lisp-inspired scripting language with really weird tokens written in rust. 
+
+❗ This language is under development and code you have written yesterday may not work today ❗
 
 ## Docs
 
@@ -132,10 +134,10 @@ Arrays can be printed:
 [-> [@ 1 2 'foo']] # Array: 1 2 'foo'
 ```
 
-You can also access enviromet variables with `%$`:
+You can also access enviromet variables with `$_`:
 
 ```wal
-[-> [%$ 'REQUEST_METHOD']]
+[-> [$_ 'REQUEST_METHOD']]
 ```
 
 #### Pushing to array

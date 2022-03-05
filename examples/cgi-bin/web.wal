@@ -3,7 +3,7 @@
 [-> 'Content-type: text/html' '' '']
 
 [->
-    [=< [== [%$ 'REQUEST_METHOD'] 'GET']
+    [=< [== [$_ 'REQUEST_METHOD'] 'GET']
         'Welcome to my fabularous website!'
         '400'
     ]

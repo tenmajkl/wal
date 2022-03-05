@@ -301,9 +301,9 @@ impl Interpreter {
                             return Token { kind: TokenKind::ARRAY, context: "Array".to_string(), body: array }; 
                         }
                     },
-                    "%$" => {
+                    "$_" => {
                         if token.body.len() != 1 {
-                            error("Function %$ takes exactly 1 argument!", 0, 0);
+                            error("Function $_ takes exactly 1 argument!", 0, 0);
                         }
                         let variable = self.parse_token(token.body[0].clone()).context;
                         let value = env::var(variable).unwrap();
