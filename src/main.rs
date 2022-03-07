@@ -11,8 +11,7 @@ enum TokenKind {
     INT,
     VOID,
     BOOL,
-    VARIABLE,
-    USERFUNCTION,
+    WORD,
     ARRAY,
 }
 
@@ -130,13 +129,7 @@ fn tokenize(program: Vec<Word>) -> Vec<Token> {
                     tokens.push(curent.clone());
                     parsing_fn = false;
                 } else {
-                    if program[index - 1].content == "$" {
-                        curent.body.push(Token { kind: TokenKind::VARIABLE, context: word.content, body: Vec::new() });
-                    } else if program[index - 1].content == "=>" {
-                        curent.body.push(Token { kind: TokenKind::USERFUNCTION, context: word.content, body: Vec::new() });
-                    } else {
-                        error("Unknown word", word.line, word.pos);
-                    }
+                    curent.body.push(Token { kind: TokenKind::WORD, context: word.content, body: Vec::new() });
                 }
             } else {
                 rec_function.push(word.clone());
@@ -183,6 +176,8 @@ impl Interpreter {
                                     print!("{} ", item.context);
                                 }
                                 println!("");
+                            } else if child.kind == TokenKind::WORD {
+                                error("Unexpected word", 0, 0);
                             } else if child.kind != TokenKind::VOID {
                                 println!("{}", child.context);
                             }
@@ -221,7 +216,19 @@ impl Interpreter {
                         }
                         return Token { kind: TokenKind::INT, context: format!("{}", result), body: Vec::new() };
                     },
-                    "==" => {
+                    "*" => {
+                        let mut result: isize = 1;
+                        for child in token.body.clone() {
+                            let parsed = self.parse_token(child);
+                            if parsed.kind == TokenKind::INT {
+                                result *= parsed.context.parse::<isize>().unwrap();
+                            } else {
+                                error("Function * takes only integer as argument", 0, 0);
+                            }
+                        }
+                        return Token { kind: TokenKind::INT, context: format!("{}", result), body: Vec::new() };
+                    },
+                    "=" => {
                         if token.body.len() < 2 {
                             error("Function == takes at least 2 arguments", 0, 0);
                         }
@@ -309,9 +316,68 @@ impl Interpreter {
                         let value = env::var(variable).unwrap();
                         return Token { kind: TokenKind::STRING, context: value, body: Vec::new() };
                     },
+                    "<>" => { 
+                        if token.body.len() < 3 {
+                            error("Function <> takes at least 3 arguments!", 0, 0);
+                        }
+                        
+                        let iterator = self.parse_token(token.body[1].clone());
+                     
+                        if iterator.kind != TokenKind::ARRAY {
+                            error("Argument 2 in function <> must be array!", 0, 0);
+                        }
+
+                        let variable = token.body[0].context.clone();
+
+                        for item in iterator.body.clone() {
+                            let item = self.parse_token(item);
+                            self.variables.insert(variable.clone(), item);
+                            for statement in token.body[2..].into_iter() {
+                                self.parse_token(statement.clone());
+                            }
+                        }
+                        self.variables.remove(&variable);
+                        return iterator; 
+                    },
+                    "!" => {
+                        if token.body.len() != 1 {
+                            error("Function ! takes exactly 1 argument", 0, 0);
+                        }
+
+                        let mut value = self.parse_token(token.body[0].clone());
+                        if value.kind != TokenKind::BOOL {
+                            error("Function ! takes only boolean arguments", 0, 0);
+                        }
+
+                        value.context = (if value.context == "true" { "false" } else { "true" }).to_string();
+                        return value;
+                    },
+                    ".." => {
+                        // [.. 1 3]
+                        if token.body.len() != 2 {
+                            error("Function .. takes exactly 2 arguments", 0, 0);
+                        }
+
+                        let from = self.parse_token(token.body[0].clone());
+                        let to = self.parse_token(token.body[1].clone());
+
+                        if from.kind != TokenKind::INT || to.kind != TokenKind::INT {
+                            error("Arguments for function .. must be integers", 0, 0);
+                        }
+
+                        let from = from.context.parse::<isize>().unwrap();
+                        let to = to.context.parse::<isize>().unwrap();
+
+                        let mut result: Vec<Token> = Vec::new();
+                        for item in from..to+1 {
+                            result.push(Token { kind: TokenKind::INT, context: format!("{}", item), body: Vec::new()});
+                        }
+
+                        return Token { kind: TokenKind::ARRAY, context: "Array".to_string(), body: result}
+                    }
                     _ => error("Undefined function", 0, 0) // TODO position
                 },
-            TokenKind::INT|TokenKind::STRING|TokenKind::VOID|TokenKind::BOOL|TokenKind::VARIABLE|TokenKind::USERFUNCTION|TokenKind::ARRAY => token,
+            TokenKind::INT|TokenKind::STRING|TokenKind::VOID|TokenKind::BOOL|TokenKind::WORD|TokenKind::ARRAY => token,
         }
     }
 

@@ -34,11 +34,11 @@ Wal currently supports only string literarls and positive integers.
 For comments is used `#` which ends with new line:
 
 ```wal
-; demonstration of comments
+# demonstration of comments
 
 [-> 'foo'] # this is print 
 
-; [-> 'bar'] this wont evaluate
+# [-> 'bar'] this wont evaluate
 ```
 
 ### Operators
@@ -61,28 +61,38 @@ The same goes for `-`:
 [-> [- 1 2]]
 ```
 
-For comparing, there is function `==`:
+And `*`:
 
 ```wal
-[-> [== 1 2]] # false
-[-> [== 1 1]] # true
-[-> [== 'foo' 'foo']] # true
+[-> [* 2 3]]
+```
+
+For comparing, there is function `=`:
+
+```wal
+[-> [= 1 2]] # false
+[-> [= 1 1]] # true
+[-> [= 'foo' 'foo']] # true
 ```
 
 And its strict:
 
 ```wal
-[-> [== '1' 1]] # false
+[-> [= '1' 1]] # false
 ```
 
-We can use this operator for
+If we want to invert boolean we can use `!`:
+
+```wal
+[-> [! [= 1 2]]] # true
+```
 
 ### If statements
 
 Wal has if function `=<` called "sad face operator" which works like ternary operator:
 
 ```wal
-[=< [== 1 2]
+[=< [= 1 2]
     [-> 'foo']
     [-> 'bar']
 ]
@@ -92,7 +102,7 @@ If first argument is true, it evaluates and returns output of second argument, i
 
 ```wal
 [-> 
-    [=< [== 1 2]
+    [=< [= 1 2]
         'foo'
         'bar'
     ]
@@ -111,6 +121,12 @@ Wal has simple system of variables, all the manipulation is done with function `
 ```
 
 If the function has only 1 argument it returns value of given variable. If it has 2 arguments it sets the value to the variable and returns the value.
+
+You can also access enviromet variables with `$_`:
+
+```wal
+[-> [$_ 'REQUEST_METHOD']]
+```
 
 ### Arrays
 
@@ -134,19 +150,13 @@ Arrays can be printed:
 [-> [@ 1 2 'foo']] # Array: 1 2 'foo'
 ```
 
-You can also access enviromet variables with `$_`:
-
-```wal
-[-> [$_ 'REQUEST_METHOD']]
-```
-
 #### Pushing to array
 
 Function `@>` pushes all arguments to the top of array given as first argument.
 
 ```wal
-
 [-> [@> [@ 1 2] 3]] # 1 2 3
+```
 
 More complex example:
 
@@ -165,6 +175,12 @@ More complex example:
 
 [-> [$ array]] # 1 2 3 'foo' 1
 
+```
+
+We can also use function `..` which will create array in range from first to second argument.
+
+```wal
+[-> [.. 1 5]]
 ```
 
 #### Indexing
@@ -187,6 +203,18 @@ For indexing there is `@$` function which returns element on index from first ar
 [-> [@$ [$ array] 1 3]] # outputs Array: 1 3 3
 
 ```
+
+### Loops
+
+In wal is implemented for loop with `<>` function:
+
+```wal
+[<> item [@ 1 2 3] [-> [$ item]]] 
+[$ item] # here wont work 
+```
+
+first parameter is variable that will contain each iteration, second is array that will be iterated and the rest is body which will be statement by statement executed.
+
 
 ### Retreving user input
 

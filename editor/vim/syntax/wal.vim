@@ -7,12 +7,17 @@ endif
 syn match walFunction '\v-'
 syn match walFunction '\v(-\>)|(\<-)'
 syn match walFunction '\v\+'
+syn match walFunction '\v\*'
 syn match walFunction '\v\$'
 syn match walFunction '\v\=\<'
-syn match walFunction '\v\=\='
+syn match walFunction '\v\='
+syn match walFunction '\v\!'
 syn match walFunction '\v\@'
 syn match walFunction '\v\@\>'
 syn match walFunction '\v\$_'
+syn match walFunction '\v\<\>'
+
+syn keyword walTODO todo TODO
 
 syn match walNumber '\d\+' display
 syn region walString start='\'' end='\'' display
@@ -24,3 +29,4 @@ hi def link walFunction Statement
 hi def link walString String
 hi def link walNumber Number
 hi def link walComment Comment
+hi def link walTODO Todo

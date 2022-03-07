@@ -1,25 +1,28 @@
-; wal example
+# wal example
 
-[$ input [<-]] ; retreiving input
-[=< [== [$ input] 'foo'] ; branching
-    [-> 'Goode job!'] ;true
-    [=< [== [$ input] 'bar']
+
+[$ input [<-]] # retreiving input
+[=< [= [$ input] 'foo'] # branching
+    [-> 'Goode job!'] # true
+    [=< [= [$ input] 'bar']
         [-> 'very nice']
         [-> 'ok']
     ]
 ] 
 
+[-> [! [= 1 2]]]
+
 [
- -> [@ 1 2 'foo'] ; array
+ -> [@ 1 2 'foo'] # array
 ]
 
 [$ array 
-    [@ 1 'bar' 3] ; saving array to variable
+    [@ 1 'bar' 3] # saving array to variable
 ]
 
-[-> [$ array]] ; printing array from variable
+[-> [$ array]] # printing array from variable
 
-[-> [@> [$ array] 1 'foo']] ; pushing to array
+[-> [@> [$ array] 1 'foo']] # pushing to array
 
 [$ array
     [@>
@@ -30,4 +33,10 @@
 
 [-> [$ array]]
 
-[-> [@$ [@ 1 0 '10'] 2 ]] ; indexing array
+[-> [@$ [@ 1 0 '10'] 2 ]] # indexing array
+
+[<> item [@ 1 2 3] [-> [$ item]]]
+
+[-> [.. 1 10]]
+
+[-> [* 1 2 3]]

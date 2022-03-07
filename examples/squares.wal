@@ -1,0 +1,9 @@
+# magic squares implemented in wal
+# wal does not have implemented functions yet so its kinda mess
+# WIP
+
+[$ size 5] 
+
+[<> number [.. 1 [* [$ size] [$ size]]]
+    [-> [$ number]]
+]
