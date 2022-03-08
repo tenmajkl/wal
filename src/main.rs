@@ -163,6 +163,20 @@ impl Interpreter {
         }
     }
 
+    fn to_number(&mut self, body: &Vec<Token>, function: &str) -> Vec<isize> {
+        let mut numbers: Vec<isize> = Vec::new();
+        for child in body {
+            let parsed = self.parse_token(child.clone());
+            if parsed.kind == TokenKind::INT {
+                numbers.push(parsed.context.parse::<isize>().unwrap());
+            } else {
+                error(&format!("Function {} takes only integer as argument", function), 0, 0);
+            }
+        }
+
+        return numbers;
+    }
+
     fn parse_token(&mut self, token: Token) -> Token {
         return match token.kind {
             TokenKind::FUNCTION => 
@@ -193,38 +207,33 @@ impl Interpreter {
                         return Token { kind: TokenKind::STRING, context: input.trim().to_string(), body: Vec::new()};
                     },
                     "+" => {
-                        let mut result: isize = 0;
-                        for child in token.body.clone() {
-                            let token = self.parse_token(child);
-                            if token.kind == TokenKind::INT {
-                                result += token.context.parse::<isize>().unwrap();
-                            } else {
-                                error("Function + takes only integer as argument", 0, 0);
-                            }
+                        let numbers = self.to_number(&token.body, "+");
+                        let mut result: isize = numbers[0];
+                        for number in numbers[1..].into_iter() {
+                            result += number;
                         }
                         return Token { kind: TokenKind::INT, context: format!("{}", result), body: Vec::new() };
                     },
                     "-" => {
-                        let mut result: isize = 0;
-                        for child in token.body.clone() {
-                            let parsed = self.parse_token(child);
-                            if parsed.kind == TokenKind::INT {
-                                result -= parsed.context.parse::<isize>().unwrap();
-                            } else {
-                                error("Function - takes only integer as argument", 0, 0);
-                            }
+                        let numbers = self.to_number(&token.body, "-");
+                        let mut result: isize = numbers[0];
+                        for number in numbers[1..].into_iter() {
+                            result -= number;
                         }
                         return Token { kind: TokenKind::INT, context: format!("{}", result), body: Vec::new() };
                     },
                     "*" => {
-                        let mut result: isize = 1;
-                        for child in token.body.clone() {
-                            let parsed = self.parse_token(child);
-                            if parsed.kind == TokenKind::INT {
-                                result *= parsed.context.parse::<isize>().unwrap();
-                            } else {
-                                error("Function * takes only integer as argument", 0, 0);
-                            }
+                        let numbers = self.to_number(&token.body, "*");
+                        let mut result: isize = numbers[0];
+                        for number in numbers[1..].into_iter() {
+                            result *= number;
+                        }
+                        return Token { kind: TokenKind::INT, context: format!("{}", result), body: Vec::new() };                    },
+                    "/" => {
+                        let numbers = self.to_number(&token.body, "/");
+                        let mut result: isize = numbers[0];
+                        for number in numbers[1..].into_iter() {
+                            result /= number;
                         }
                         return Token { kind: TokenKind::INT, context: format!("{}", result), body: Vec::new() };
                     },
@@ -249,6 +258,46 @@ impl Interpreter {
                             last = parsed;
                         }
                         return Token { kind: TokenKind::BOOL, context: format!("{}", result), body: Vec::new() }
+                    },
+                    "<" => {
+                        if token.body.len() != 2 {
+                            error("Function < takes exactly 2 arguments", 0, 0);
+                        }
+
+                        let numbers = self.to_number(&token.body, "<");
+                        let result = numbers[0] < numbers[1];
+
+                        return Token { kind: TokenKind::BOOL, context: format!("{}", result), body: Vec::new() }
+                    },
+                    ">" => {
+                        if token.body.len() != 2 {
+                            error("Function > takes exactly 2 arguments", 0, 0);
+                        }
+
+                        let numbers = self.to_number(&token.body, ">");
+                        let result = numbers[0] > numbers[1];
+
+                        return Token { kind: TokenKind::BOOL, context: format!("{}", result), body: Vec::new() }                    
+                    },
+                    ">=" => {
+                        if token.body.len() != 2 {
+                            error("Function >= takes exactly 2 arguments", 0, 0);
+                        }
+
+                        let numbers = self.to_number(&token.body, ">=");
+                        let result = numbers[0] >= numbers[1];
+
+                        return Token { kind: TokenKind::BOOL, context: format!("{}", result), body: Vec::new() }                    
+                    },
+                    "<=" => {
+                        if token.body.len() != 2 {
+                            error("Function <= takes exactly 2 arguments", 0, 0);
+                        }
+
+                        let numbers = self.to_number(&token.body, "<=");
+                        let result = numbers[0] <= numbers[1];
+
+                        return Token { kind: TokenKind::BOOL, context: format!("{}", result), body: Vec::new() }                    
                     },
                     "=<" => {
                         if token.body.len() < 3 {
@@ -292,19 +341,20 @@ impl Interpreter {
                             error("Function @$ takes at least 2 arguments", 0, 0)
                         }
                         
-                        let mut array: Vec<Token> = self.parse_token(token.body[0].clone()).body;
-                        if token.body[1].kind != TokenKind::INT {
+                        let index = self.parse_token(token.body[1].clone());
+                        if index.kind != TokenKind::INT {
                             error("Array can be indexed only with integer", 0, 0);
                         }
-                        let index: usize = token.body[1].context.parse::<usize>().unwrap();
+                        let mut array: Vec<Token> = self.parse_token(token.body[0].clone()).body;
+                        let index: usize = index.context.parse::<usize>().unwrap();
                         
                         if token.body.len() == 2 {
-                            if index > array.len() -1 {
+                            if index > array.len() - 1 {
                                 error(&format!("Cannot index to position {}, because size of array is {}", index, array.len()), 0, 0)
                             }
-                            return array[index].clone();
+                            return self.parse_token(array[index].clone());
                         } else {
-                            array[index] = token.body[2].clone();
+                            array[index] = self.parse_token(token.body[2].clone());
                             return Token { kind: TokenKind::ARRAY, context: "Array".to_string(), body: array }; 
                         }
                     },

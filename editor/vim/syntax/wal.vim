@@ -4,20 +4,8 @@ if exists('b:current_syntax')
     finish
 endif
 
-syn match walFunction '\v-'
-syn match walFunction '\v(-\>)|(\<-)'
-syn match walFunction '\v\+'
-syn match walFunction '\v\*'
-syn match walFunction '\v\$'
-syn match walFunction '\v\=\<'
-syn match walFunction '\v\='
-syn match walFunction '\v\!'
-syn match walFunction '\v\@'
-syn match walFunction '\v\@\>'
-syn match walFunction '\v\$_'
-syn match walFunction '\v\<\>'
-
-syn keyword walTODO todo TODO
+syn match walFunction "\[\S\+"hs=s+1
+syn keyword walTODO todo TODO display
 
 syn match walNumber '\d\+' display
 syn region walString start='\'' end='\'' display

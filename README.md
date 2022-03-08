@@ -4,6 +4,13 @@ Wal is lisp-inspired scripting language with really weird tokens written in rust
 
 ❗ This language is under development and code you have written yesterday may not work today ❗
 
+## TODO
+
+- [ ] - rewrite each function to rust function with some better argument validation (regex?)
+- [ ] - split into multiple files
+- [ ] - custom functions
+- [ ] - all the basic functions
+
 ## Docs
 
 ### Instalation

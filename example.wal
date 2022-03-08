@@ -1,5 +1,9 @@
 # wal example
 
+[-> [+ 1 2 3]]
+[-> [- 3 2 1]]
+[-> [* 1 2 3]]
+[-> [/ 5 2]]
 
 [$ input [<-]] # retreiving input
 [=< [= [$ input] 'foo'] # branching

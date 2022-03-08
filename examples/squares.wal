@@ -1,9 +1,54 @@
 # magic squares implemented in wal
 # wal does not have implemented functions yet so its kinda mess
-# WIP
+# I DONT KNOW WHY BUT IT WORKS
 
 [$ size 5] 
 
+[$ square
+    [@ 
+        [@ 0 0 0 0 0]
+        [@ 0 0 0 0 0]
+        [@ 0 0 0 0 0]
+        [@ 0 0 0 0 0]
+        [@ 0 0 0 0 0]
+    ]
+]
+
+[$ x 0]
+[$ y [/ [$ size] 2]]
+
+[$ last [@ 0 0]]
+
 [<> number [.. 1 [* [$ size] [$ size]]]
-    [-> [$ number]]
+    
+    [=< [> [@$ [@$ [$ square] [$ x] ] [$ y]] 0]
+        [<> _ [@ 1]
+            [$ x [+ [@$ [$ last] 0] 1]]
+            [$ y [@$ [$ last] 1]]
+        ]
+        [->]
+    ]
+
+    [$ square 
+        [@$ [$ square] 
+        [$ x] 
+        [@$ [@$ [$ square] [$ x] ] [$ y] [$ number]]]
+    ] # what exactly is this?????????????????????????????????
+    
+    [$ last [@$ [$ last] 0 [$ x]]]
+    [$ last [@$ [$ last] 1 [$ y]]]
+
+    [=< [< [- [$ x] 1] 0]
+        [$ x [- [$ size] 1]]
+        [$ x [- [$ x] 1]]
+    ]
+
+    [=< [>= [+ [$ y] 1] [$ size]]
+        [$ y 0]
+        [$ y [+ [$ y] 1]]
+    ]
+]
+
+[<> col [$ square]
+    [-> [$ col]]
 ]
