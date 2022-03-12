@@ -4,7 +4,7 @@ if exists('b:current_syntax')
     finish
 endif
 
-syn match walFunction "\[\S\+"hs=s+1
+syn match walFunction "\[[^\s\[\]]\+"hs=s+1
 syn keyword walTODO todo TODO display
 
 syn match walNumber '\d\+' display

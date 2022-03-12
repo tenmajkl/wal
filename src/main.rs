@@ -1,7 +1,7 @@
 // lisp inspired language
 // very good very nice
 
-use std::{env, fs, path::Path, process::exit, collections::HashMap};
+use std::{env, fs, path::Path, process::exit, collections::HashMap, io::Write};
 
 #[derive(Debug, Clone)]
 #[derive(PartialEq)]
@@ -201,6 +201,7 @@ impl Interpreter {
                     "<-" => {
                         if !token.body.is_empty() {
                             print!("{}", &self.parse_token(token.body[0].clone()).context);
+                            std::io::stdout().flush().expect("ERROR");
                         }
                         let mut input: String = String::new();
                         std::io::stdin().read_line(&mut input).unwrap();
@@ -424,7 +425,61 @@ impl Interpreter {
                         }
 
                         return Token { kind: TokenKind::ARRAY, context: "Array".to_string(), body: result}
-                    }
+                    },
+                    "><" => {
+                        if token.body.len() < 2 {
+                            error("Function >< takes at least 2 arguments!", 0, 0);
+                        }
+                        
+
+                        while self.parse_token(token.body[0].clone()).context != "false" {
+                            for statement in token.body[1..].into_iter() {
+                                self.parse_token(statement.clone());
+                            }
+                        }
+                        
+                        return Token { kind: TokenKind::VOID, context: String::new(), body: Vec::new() };
+                    },
+                    "~" => {
+                        if token.body.len() != 1 {
+                            error("Function ~ takes exactly 1 argument", 0, 0);
+                        }
+
+                        let code: Token = self.parse_token(token.body[0].clone());
+                        if code.kind != TokenKind::STRING {
+                            error("Argument for function ~ must be string!", 0, 0);
+                        }
+
+                        self.parse(tokenize(lex(&code.context)));
+                        return code;
+                    },
+                    "o-o" => {
+                        for statement in token.body {
+                            self.parse_token(statement.clone());
+                        }
+
+                        return Token { kind: TokenKind::VOID, context: String::new(), body: Vec::new() };
+                    },
+                    "~>" => {
+                        if token.body.len() != 1 {
+                            error("Function ~> takes exactly 1 argument", 0, 0);
+                        }
+
+                        let file: Token = self.parse_token(token.body[0].clone());
+                        if file.kind != TokenKind::STRING {
+                            error("Argument for function ~> must be string!", 0, 0);
+                        }   
+        
+                        if !Path::new(&file.context).exists() {
+                            error(&format!("File {} not found", file.context), 0, 0);
+                        }
+                
+                        let code = fs::read_to_string(file.context)
+                            .expect("File is not readable");
+
+                        self.parse(tokenize(lex(&code)));
+                        return Token { kind: TokenKind::VOID, context: String::new(), body: Vec::new() }; 
+                    },
                     _ => error("Undefined function", 0, 0) // TODO position
                 },
             TokenKind::INT|TokenKind::STRING|TokenKind::VOID|TokenKind::BOOL|TokenKind::WORD|TokenKind::ARRAY => token,
