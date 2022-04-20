@@ -193,9 +193,10 @@ impl Interpreter {
                             } else if child.kind == TokenKind::WORD {
                                 error("Unexpected word", 0, 0);
                             } else if child.kind != TokenKind::VOID {
-                                println!("{}", child.context);
+                                print!("{}", child.context);
                             }
                         }
+                        println!();
                         return Token { kind: TokenKind::VOID, body: Vec::new(), context: String::new() };
                     },
                     "<-" => {
@@ -238,6 +239,15 @@ impl Interpreter {
                         }
                         return Token { kind: TokenKind::INT, context: format!("{}", result), body: Vec::new() };
                     },
+                    "%" => {
+                        let numbers = self.to_number(&token.body, "/");
+                        let mut result: isize = numbers[0];
+                        for number in numbers[1..].into_iter() {
+                            result %= number;
+                        }
+                        return Token { kind: TokenKind::INT, context: format!("{}", result), body: Vec::new() };
+                    },
+
                     "=" => {
                         if token.body.len() < 2 {
                             error("Function == takes at least 2 arguments", 0, 0);
